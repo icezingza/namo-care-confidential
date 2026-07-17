@@ -83,7 +83,8 @@ STEP 3: Execute (automatic, irreversible)
   
 Immutable Evidence (NEVER deleted):
   ✅ complianceAuditTrail (legal proof deletion occurred)
-  ✅ settingsChangeLog (historical alert settings)
+  ✅ archivedAuditTrails (audit logs archived securely before deletion)
+  ✅ settingsChangeLog (historical alert settings and safety clamped values)
   ✅ Firestore audit logs (system-level operations)
 ```
 
