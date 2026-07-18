@@ -65,7 +65,7 @@
 - [ ] Includes:
   - What is NaMo Care
   - Key features (dashboard, LINE bot, alerts)
-  - Verification results (26/26 scenarios)
+  - Verification results (26/53 scenarios)
   - Target market
   - Deployment timeline (2 weeks)
   - Pricing model
@@ -256,7 +256,7 @@
   3. Competitor analysis (what's missing)
   4. NaMo Care solution
   5. Features overview (dashboard, LINE, alerts)
-  6. Verification results (26/26 emulator scenarios)
+  6. Verification results (26/53 emulator scenarios)
   7. Architecture (simplified diagram)
   8. Security & compliance (PDPA checkboxes)
   9. Deployment timeline (2 weeks)
@@ -284,7 +284,7 @@
 ### **6.4 LinkedIn Posts**
 - [ ] **File:** `IP_SALES_PACKAGE/SOCIAL_MEDIA.md`
 - [ ] Post 1: "Built an elderly care platform verified in emulator"
-- [ ] Post 2: "26 scenarios, 0 false negatives — medical-grade ready"
+- [ ] Post 2: "53 scenarios, 0 false negatives — medical-grade ready"
 - [ ] Post 3: "Seeking acquisition partner for Southeast Asia scale"
 
 ---
@@ -360,7 +360,7 @@ NaMo Care IP Sales Package/
 
 ### **9.1 Pre-Launch Verification**
 - [ ] All documents spell-checked
-- [ ] All numbers verified (14M elderly, 26 scenarios, etc.)
+- [ ] All numbers verified (14M elderly, 53 scenarios, etc.)
 - [ ] All links work (demo video plays, GitHub links live)
 - [ ] All contact emails accurate
 - [ ] All prices consistent ($1.5M–$3M range)

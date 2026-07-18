@@ -63,7 +63,7 @@ Southeast Asia consumes AI built elsewhere — foreign UX assumptions, foreign d
 Medical-grade elderly care platform for Thailand's 14M elderly.
 
 - **Channels:** React caregiver dashboard + LINE Bot (no app install for elderly)
-- **Reliability:** Zero-false-negative alert engine, retry queue, dead-letter pipeline — 26/26 emulator scenarios verified
+- **Reliability:** Zero-false-negative alert engine, retry queue, dead-letter pipeline — 26/53 emulator scenarios verified
 - **Compliance:** PDPA-ready (immutable audit trail, data export, 2-step deletion)
 - **AI layer:** Emotion analysis on elderly messages, RAG-ready conversation architecture, LLM integration points (Gemini/OpenAI-compatible)
 - **Status:** Production-ready, security-audited, for sale / license / partnership

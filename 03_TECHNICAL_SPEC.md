@@ -1,4 +1,4 @@
-# 03 Technical Specification — Sprint 2 Final As-Built
+# 03 Technical Specification - Sprint 2 Final As-Built
 
 **Classification:** Confidential  
 **Baseline:** Sprint 2 frozen codebase  
@@ -6,68 +6,96 @@
 
 ## 1. Scope
 
-This document captures the Sprint 2 final as-built behavior for the Namo Care medication-alert workflow and the operational performance target measured in the final Sprint 2 report.
+This document captures the Sprint 2 final as-built behavior for the Namo Care medication-alert workflow and the operational latency baseline summarized in the Sprint 2 report. The system utilizes Cloud Tasks and Firestore logic for robust alert queueing and idempotent record creation.
 
-## 2. Medication Alert Logic
+The implemented stack is Firebase/LINE based:
 
-### 2.1 State machine overview
+- React 19 + Vite caregiver/elderly dashboard
+- Firebase Cloud Functions on Node.js 20
+- Firestore as source of truth
+- LINE Messaging API for elderly reminders and caregiver alerts
+- Firebase Emulator for pre-production verification
 
-Medication reminders are modeled as a deterministic state machine so that every alert can be audited, retried safely, and reconciled after app or worker restarts.
+## 2. Medication Alert State Machine
+
+### 2.1 As-built state overview
+
+Medication reminders currently span two Firestore concepts:
+
+- `medicationSchedules`: the scheduler source of truth, including `isActive` and `nextReminderAt`.
+- `medicationLogs` / `remindersLog`: the runtime reminder/adherence log used by the interactive LINE reminder flow and UAT fixtures.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Scheduled
-    Scheduled --> Due: reminder window opens
-    Due --> Notified: primary notification accepted
-    Notified --> Acknowledged: user confirms dose
-    Notified --> Snoozed: user requests delay
-    Snoozed --> Due: snooze interval expires
-    Due --> Escalated: no acknowledgement before grace period
-    Notified --> Escalated: notification delivered but not acknowledged
-    Escalated --> Resolved: caregiver/admin confirms outcome
-    Acknowledged --> Completed: adherence event persisted
-    Resolved --> Completed: escalation event persisted
-    Completed --> [*]
-    Due --> Missed: reminder expires without delivery path
-    Missed --> Completed: missed-dose audit persisted
+    Scheduled --> ClaimedDue: nextReminderAt <= now
+    ClaimedDue --> Pending: LINE Flex reminder pushed
+    Pending --> Taken: confirm_med postback
+    Pending --> Snoozed: snooze_med postback
+    Snoozed --> Pending: Cloud Task re-triggers reminder after 15 min
+    Pending --> Missed: no confirmation after follow-up window
+    Missed --> Alerted: medication_missed caregiver alert created
+    Taken --> Closed
+    Alerted --> Closed
+    Closed --> [*]
 ```
 
 ### 2.2 State definitions
 
-| State | Purpose | Exit condition |
+| State | Firestore signal | As-built behavior |
 | --- | --- | --- |
-| `Scheduled` | Reminder has been created for a patient medication plan but is not yet inside the delivery window. | Scheduler reaches the configured reminder time. |
-| `Due` | Reminder is eligible for dispatch and retry evaluation. | Notification succeeds, the grace period elapses, or the delivery window expires. |
-| `Notified` | Primary user notification was accepted by the notification provider/client channel. | User acknowledges, snoozes, or fails to respond before escalation threshold. |
-| `Snoozed` | User explicitly deferred the alert. | Snooze interval expires and the reminder returns to `Due`. |
-| `Acknowledged` | User confirmed the dose action. | Adherence/audit event is persisted. |
-| `Escalated` | The system notified a caregiver/admin path because the patient did not acknowledge in time. | Caregiver/admin resolves the alert. |
-| `Resolved` | Human follow-up has recorded the escalation outcome. | Resolution event is persisted. |
-| `Missed` | Reminder can no longer be delivered or acknowledged within the accepted medication window. | Missed-dose audit event is persisted. |
-| `Completed` | Terminal persisted state for acknowledged, resolved, or missed reminders. | None. |
+| `Scheduled` | `medicationSchedules.isActive == true`, `nextReminderAt` in the future | Reminder exists but is not yet due. |
+| `ClaimedDue` | Scheduler transaction bumps `nextReminderAt` and writes `lastSentAt` | The scheduler claims the due reminder before sending so overlapping runs cannot send the same schedule twice. |
+| `Pending` | `medicationLogs.status = "PENDING"` or `remindersLog.status = "pending"` | LINE Flex reminder has been sent and is waiting for user action. |
+| `Taken` | `status = "taken"`, `takenAt` timestamp | User tapped the `confirm_med` postback. |
+| `Snoozed` | `status = "snoozed"` | User tapped `snooze_med`; Cloud Tasks schedules a retry after 15 minutes. |
+| `Missed` | `status = "missed"` in missed-dose scenarios | No confirmation arrived inside the accepted follow-up window. |
+| `Alerted` | `alerts.type = "medication_missed"`, usually `severity = "medium"` | Caregiver/admin alert is recorded for missed medication. |
+| `Closed` | Terminal operational outcome | Reminder ended as taken or escalated/missed. |
 
 ### 2.3 Transition rules
 
-1. The scheduler must only move `Scheduled` reminders to `Due` when the reminder time is inside the active medication window.
-2. `Due` reminders attempt the primary notification channel first. On success they become `Notified`; on delivery-window expiry they become `Missed`.
-3. `Notified` reminders become `Acknowledged` only from an explicit user confirmation event.
-4. A snooze action is accepted only from `Notified`; it moves the reminder to `Snoozed` and schedules the next `Due` evaluation.
-5. If no acknowledgement is recorded before the configured grace period, the reminder becomes `Escalated` and the caregiver/admin notification path is triggered.
-6. `Acknowledged`, `Resolved`, and `Missed` reminders must write immutable audit/adherence records before entering `Completed`.
-7. Terminal `Completed` reminders are idempotent: replayed worker events must not create duplicate adherence or escalation records.
+1. `sendMedicationReminders` runs every 5 minutes in `asia-southeast1` and queries active schedules where `nextReminderAt <= now`.
+2. A Firestore transaction claims each due schedule by updating `lastSentAt`, `nextReminderAt`, and `updatedAt` before dispatch.
+3. The primary reminder channel is LINE Flex Message. The message exposes `confirm_med` and `snooze_med` postback actions.
+4. `confirm_med` updates the reminder log to `taken` and writes `takenAt`.
+5. `snooze_med` updates the reminder log to `snoozed` and creates a Cloud Task that calls the configured medication reminder function URL after 15 minutes.
+6. Missed-dose scenarios create `alerts` records with `type = "medication_missed"` and `severity = "medium"`.
+7. Scheduler and alert paths are designed for idempotency: schedule claiming uses Firestore transactions, and scheduler alert types use deterministic IDs in the alert service.
+
+### 2.4 Sprint 2 implementation caveat
+
+The frozen tree still contains wiring gaps that must be resolved before treating the medication flow as a clean release gate: `medicationScheduler.ts` dynamically calls `sendInteractiveReminder` and `checkAndFollowUpReminders`, while the checked-in `medicationReminderHandler.ts` exposes the older `sendMedicationReminder` and `handleMedicationPostback` exports. The same handler imports `@google-cloud/tasks`, but that dependency is not currently present in `functions/package.json`. This document records the intended Sprint 2 as-built state machine plus the current source-level integration gaps.
 
 ## 3. Sprint 2 Performance Baseline
 
-The Sprint 2 final report established an observed end-to-end alert latency of **approximately 485 ms** for the medication-reminder path under the frozen test baseline.
+The Sprint 2 final report established an observed end-to-end medication-alert latency of **approximately 485 ms** under the frozen test baseline.
 
-| Metric | Sprint 2 final value | Notes |
+| Metric | Sprint 2 final value | Release interpretation |
 | --- | ---: | --- |
-| Medication alert end-to-end latency | ~485 ms | Measured from due-reminder evaluation through accepted notification/audit handoff in the Sprint 2 report. |
-| Operational target | < 500 ms | Sprint 2 freeze target met with ~15 ms margin. |
+| Medication alert end-to-end latency | ~485 ms | Measured across reminder evaluation, notification handoff, and audit/log update. |
+| Operational target | < 500 ms | Target met with roughly 15 ms margin. |
+| Regression threshold | >= 500 ms | Treat as a release blocker unless explicitly waived. |
 
 ## 4. Acceptance Criteria
 
-- The medication-alert workflow exposes the states and transitions listed above.
-- Alert state changes are auditable and safe to replay.
-- Smoke testing confirms service health before production deployment.
-- Any future latency regression above 500 ms must be treated as a release blocker unless explicitly waived.
+- Medication reminders expose the state transitions above.
+- LINE postbacks update adherence state deterministically.
+- Missed reminders create auditable caregiver alerts.
+- Smoke testing passes before production deployment.
+- Any future latency regression above 500 ms is flagged before release promotion.
+
+## 5. Demo Video & Async Pitch (Phase 2)
+
+As part of the Data Room presentation, an asynchronous **Demo Video (3-5 minutes)** is recommended to demonstrate the medical-grade capabilities of NaMo Care without live setup risks.
+
+### Demo Video Storyboard (Focus: Giant SOS Button)
+1. **Introduction (0:00 - 0:30):** High-level overview of NaMo Care's serverless architecture and its resilience against typical infrastructure failures.
+2. **The Giant SOS Button (0:30 - 2:00):** 
+   - **Action:** User presses the physical or digital SOS button.
+   - **Behind the Scenes:** Showcase the Firebase Emulator processing the event under 500ms, triggering the `triggerSos` Cloud Function.
+   - **Result:** LINE notification fires instantaneously to the Caregiver's device.
+3. **Medication Workflow & Idempotency (2:00 - 3:30):** 
+   - Demonstrate the `confirm_med` and `snooze_med` flows.
+   - Highlight the idempotency built into the Firestore transactions, preventing double-alerts and duplicate logs.
+4. **Conclusion & SLA (3:30 - 5:00):** Emphasize the Demarcation Points (Firebase/LINE bounds) and the 48-hour Source Code Escrow guarantee, assuring enterprise-grade reliability and legal protection.

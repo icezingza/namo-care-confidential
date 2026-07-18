@@ -34,7 +34,7 @@ NaMo Care is a **production-ready medical-grade elderly care platform** designed
 
 #### **1. Web Dashboard (for caregivers/families)**
 - Monitor elderly's health metrics (inactivity, medication compliance, mood)
-- Receive real-time alerts (SOS, missed doses, unusual activity)
+- Receive real-time alerts (SOS from Smartwatch Fall Detection, missed doses, unusual activity)
 - Manage care settings (alert thresholds, medication schedules)
 - Export data / delete user records (PDPA-compliant)
 
@@ -67,7 +67,7 @@ NaMo Care is a **production-ready medical-grade elderly care platform** designed
 
 | Feature | Test Scenario | Result |
 |---|---|---|
-| **Alert reliability** | LINE outage → queue → recovery → auto-drain | ✅ Verified (26/26 emulator scenarios) |
+| **Alert reliability** | LINE outage → queue → recovery → auto-drain | ✅ Verified (26/53 emulator scenarios) |
 | **Data safety** | Delete 620+ user docs in Firestore batches | ✅ All docs deleted, audit trail survives |
 | **Medication flow** | Miss 5 doses → escalate alert severity | ✅ Threshold clamped, audit-logged |
 | **Concurrency** | 5 scheduler runs attempt same alert ID | ✅ Only 1 alert created (idempotent dedup) |

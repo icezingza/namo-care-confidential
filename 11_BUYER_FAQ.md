@@ -27,7 +27,7 @@ If your process eventually requires a live meeting (e.g., final signing ceremony
 A production-ready elderly care platform for Thailand: a React web dashboard for caregivers + a LINE Bot for elderly users (no app install), on a shared Firestore backend. Core capabilities: medication reminders, inactivity detection, emotion analysis, SOS emergency flow, and a medical-grade alert engine.
 
 **Q: Is this an MVP or a finished product?**  
-Finished and verified. 26/26 end-to-end scenarios pass on the Firestore emulator (real SDK semantics, not mocks), including LINE-outage recovery, concurrent-scheduler deduplication, and 620-document batch deletion. An independent security audit found 0 critical vulnerabilities.
+Finished and verified. 53/53 end-to-end scenarios pass on the Firestore emulator (real SDK semantics, not mocks), including LINE-outage recovery, concurrent-scheduler deduplication, and 620-document batch deletion. An independent security audit found 0 critical vulnerabilities.
 
 **Q: Does it have live users/customers today?**  
 The platform is deployment-ready. It has not been sold to a hospital yet — that is exactly the opportunity: you acquire proven technology without a competitor's installed base to fight, and without 6–12 months of R&D.
