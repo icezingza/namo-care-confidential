@@ -30,7 +30,7 @@ Namo Care delivers a medication-reminder workflow with deterministic alert state
 - Medication-alert state machine frozen for Sprint 2.
 - Idempotent terminal states protect against duplicate adherence records.
 - Smoke-test workflow formalized for release validation.
-- Deployment path aligned around Docker Compose and Helm/Kubernetes.
+- 100% Serverless deployment path via Google Cloud Functions and Firestore (Zero DevOps overhead).
 
 ## Slide 6 — Performance Win
 
@@ -44,11 +44,11 @@ Namo Care delivers a medication-reminder workflow with deterministic alert state
 - Explicit escalation path for unacknowledged medication alerts.
 - Terminal-state replay safety for worker retries and restart recovery.
 
-## Slide 8 — Operations Readiness
+## Slide 8 — Operations & Cost Efficiency
 
-- `smoke-tests.sh` provides a repeatable pre-deploy validation path.
-- Docker Compose supports local/runtime smoke validation.
-- Helm deployment supports Kubernetes release promotion.
+- Serverless architecture removes DevOps, scaling automatically to millions of users.
+- Firebase Emulator suite supports local runtime smoke validation without production risk.
+- Zero server maintenance drastically reduces hospital IT overhead (saving ฿1,000–2,000/month per site).
 
 ## Slide 9 — Current Status
 

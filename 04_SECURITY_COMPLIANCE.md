@@ -45,17 +45,17 @@ NaMo Care collects:
 
 ### **Right to Access**
 ```
-Endpoint: POST /api/compliance/export
+Endpoint: POST /api/compliance/export (exportHealthData Cloud Function)
 Auth: Firebase ID token
-Response: Complete ZIP of user's personal data
+Response: Temporary 5-minute Signed URL (Google Cloud Storage)
 Includes:
+  - In-memory generated PDF (`jspdf`)
   - Profile (name, age, conditions)
-  - Medication history (last 90 days)
+  - Medication history and adherence signals
   - Alert history (all alerts triggered)
-  - Audit trail (who accessed what, when)
-  - Export timestamp + checksum
+  - Audit trail
   
-Delivered within 7 days (legal requirement)
+Delivered within 7 days (legal requirement), though automation delivers immediately.
 Cannot be rejected unless:
   ✗ User is deceased (medical record holder instead)
   ✗ Excessive requests (>1 per month)
@@ -67,12 +67,12 @@ Cannot be rejected unless:
 2-Step Process (PDPA requirement):
 
 STEP 1: Request (burnout prevention)
-  POST /api/compliance/request-deletion
-  Response: Confirmation link (24-hour TTL)
-  Reason: Prevent accidental deletion
+  Client directly updates `deletionRequestedAt` field in their own user document
+  Firestore Rules permit this explicit write action for the owner
+  Reason: Prevent accidental deletion by ensuring a conscious action
   
 STEP 2: Confirm (no second thoughts after 24h)
-  POST /api/compliance/confirm-deletion {confirmationToken}
+  Client updates `settings.consent` flag
   Response: Deletion scheduled (24-hour safety window)
   Reason: PDPA allows hospital 24h to object
   

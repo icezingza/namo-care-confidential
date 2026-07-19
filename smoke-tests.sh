@@ -1,24 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-API_HEALTH_URL="${API_HEALTH_URL:-http://localhost:8000/health}"
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
-TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-90}"
+# Namo Care: Serverless Smoke Tests via Firebase Emulator
 
-printf 'Starting local stack with %s...\n' "$COMPOSE_FILE"
-docker compose -f "$COMPOSE_FILE" up -d
+printf 'Starting Firebase Emulators for smoke testing...\n'
 
-printf 'Waiting for API health at %s...\n' "$API_HEALTH_URL"
-end=$((SECONDS + TIMEOUT_SECONDS))
-until curl -fsS "$API_HEALTH_URL" >/tmp/ird-ai-health.json; do
-  if (( SECONDS >= end )); then
-    printf 'Timed out waiting for API health. Last docker compose status:\n' >&2
-    docker compose -f "$COMPOSE_FILE" ps >&2
-    exit 1
-  fi
-  sleep 3
-done
+# We assume the main project repository is in the adjacent directory
+PROJECT_DIR="../namo-care-1"
 
-cat /tmp/ird-ai-health.json
-printf '\nRunning integration smoke tests...\n'
-pytest tests/evaluation/test_smoke.py -m integration
+if [ ! -d "$PROJECT_DIR" ]; then
+  printf "Error: Main project directory %s not found.\n" "$PROJECT_DIR" >&2
+  exit 1
+fi
+
+cd "$PROJECT_DIR"
+
+# Execute E2E tests within the Firebase Emulator suite
+# The emulator automatically spins up Firestore, Functions, etc., runs the tests, and shuts down safely.
+firebase emulators:exec "npx playwright test tests/e2e/negative-scenarios.spec.ts" --project demo-namo-care
+
+printf '\nSmoke tests completed successfully.\n'

@@ -69,5 +69,11 @@ The Sprint 2 final report established an observed end-to-end alert latency of **
 
 - The medication-alert workflow exposes the states and transitions listed above.
 - Alert state changes are auditable and safe to replay.
-- Smoke testing confirms service health before production deployment.
+- Smoke testing confirms service health before production deployment (validated via Firebase Emulator).
 - Any future latency regression above 500 ms must be treated as a release blocker unless explicitly waived.
+
+## 5. Architecture & PDPA Infrastructure
+
+- **100% Serverless:** Built entirely on Google Cloud Functions and Firestore. This eliminates legacy Kubernetes/Docker DevOps overhead while ensuring automatic scaling and robust disaster recovery (Point-in-Time Recovery).
+- **Data Export (Right of Access):** Built-in in-memory PDF generation (`jspdf`) of health signals and telemetry. Files are securely delivered to users via 5-minute signed Google Cloud Storage URLs to guarantee PDPA compliance.
+- **Chaos Engineering & Resilience:** Dedicated testing hooks (e.g., `process.env.FUNCTIONS_EMULATOR === 'true'`) allow simulated LINE API failures ("Magic Payload" testing). This ensures the retry queue and dead-letter pipelines function correctly under stress without jeopardizing production data.
