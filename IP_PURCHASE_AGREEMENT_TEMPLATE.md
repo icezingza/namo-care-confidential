@@ -97,6 +97,10 @@ All verification was performed on Firestore Emulator using real SDK semantics. P
 
 Seller does NOT guarantee specific performance, uptime, or SLA for production deployments.
 
+**4.4 Demarcation Points (SLA Boundaries)**  
+To prevent false Service Level Agreement (SLA) breach claims, the following demarcation points are established:
+- **Firebase Quotas & Limits:** Any downtime, latency, or failure caused by Firebase/GCP quota exhaustion, rate limiting, or platform-wide outages is explicitly excluded from Seller's SLA obligations.
+- **LINE API Quotas & Limits:** Any failure to deliver notifications, alerts, or messages due to LINE Messaging API quota limits, account bans, or LINE server outages is strictly the responsibility of the Buyer and excluded from Seller's SLA.
 ---
 
 ## 5. LIMITATION OF LIABILITY
@@ -230,9 +234,9 @@ Seller will engage a third-party escrow service ([Escrow.com / Iron Mountain / o
 - Documentation and architecture guide
 
 **11.2 Escrow Trigger**  
-Code is released to Buyer if:
+Code is released to Buyer within **48 hours** if:
 - Seller becomes insolvent or bankrupt
-- Seller ceases to provide support within 30 days of Buyer's support request
+- Seller ceases to provide support or responds to a critical infrastructure failure within 48 hours of Buyer's emergency request
 - Seller is subject to regulatory action affecting operations
 
 **11.3 Escrow Term**  
